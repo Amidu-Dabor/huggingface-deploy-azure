@@ -41,10 +41,9 @@ jobs:
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
       - name: 'Installing Azure CLI'
-        shell: pwsh
+        shell: bash
         run: |
-          Invoke-WebRequest -Uri https://aka.ms/InstallAzureCLIDeb -OutFile azcli.sh
-          bash azcli.sh
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Build and push container image to registry
         uses: docker/build-push-action@v2
