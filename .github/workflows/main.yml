@@ -3,6 +3,8 @@ name: Trigger auto deployment for demo-container
 env:
   AZURE_CONTAINER_APP_NAME: demo-container-app
   AZURE_GROUP_NAME: demo-container
+  LOGIN_SERVER: testdemocontainerreg1.azurecr.io
+  CONTAINER_IMAGE: testdemocontainerreg1.azurecr.io/${{ env.REPO }}:${{ github.sha }
 
 on:
   push:
@@ -30,20 +32,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-
 
-      - name: Log in to GitHub container registry
-        uses: docker/login-action@v3.3.0
+      - name: Azure Container Registry Login
+        uses: Azure/docker-login@v1
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+          username: ${{ secrets.AZURE_CLIENT_ID }}
+          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+          login-server: ${{ env.LOGIN_SERVER }}
 
       - name: Lowercase the repo name and username
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
       - name: 'Installing Azure CLI'
-        shell: bash
+        shell: pwsh
         run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          Invoke-WebRequest -Uri https://aka.ms/InstallAzureCLIDeb -OutFile azcli.sh
+          bash azcli.sh
 
       - name: Build and push container image to registry
         uses: docker/build-push-action@v2
@@ -51,7 +54,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
           push: true
-          tags: ghcr.io/${{ env.REPO }}:${{ github.sha }}
+          tags: testdemocontainerreg1.azurecr.io/${{ env.REPO }}:${{ github.sha }}
           file: ./Dockerfile
 
   deploy:
@@ -72,6 +75,6 @@ jobs:
         with:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
-            az containerapp registry set -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --server ghcr.io --username  ${{ github.actor }} --password ${{ secrets.PAT }}
-            az containerapp update -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --cpu 2 --memory 4Gi
-            az containerapp update -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --image ghcr.io/${{ env.REPO }}:${{ github.sha }}
+            az containerapp registry set -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --server ${{ env.LOGIN_SERVER }} --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }}
+            az containerapp update -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --cpu 2 --memory 4Gi --image ${{ env.CONTAINER_IMAGE }}
+          # az containerapp update -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --image ${{ env.CONTAINER_IMAGE }}
