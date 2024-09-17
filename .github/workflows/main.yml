@@ -46,11 +46,12 @@ jobs:
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
+      # Caching Docker layers using gha cache backend
       - name: Build and push container image to registry
         uses: docker/build-push-action@v2
         with:
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           push: true
           tags: testdemocontainerreg1.azurecr.io/${{ env.REPO }}:${{ github.sha }}
           file: ./Dockerfile
