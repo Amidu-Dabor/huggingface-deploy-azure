@@ -41,10 +41,11 @@ jobs:
       - name: Lowercase the repo name and username
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
-      - name: 'Installing Azure CLI'
+      - name: 'Installing Azure CLI and Docker dependencies'
         shell: bash
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
       # Caching Docker layers using gha cache backend
       - name: Build and push container image to registry
