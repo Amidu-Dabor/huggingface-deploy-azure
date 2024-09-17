@@ -71,7 +71,7 @@ jobs:
       - name: 'Azure CLI Login with OIDC'
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: 'Lowercase the repo name and username'
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
